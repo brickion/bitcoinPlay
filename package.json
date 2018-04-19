@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/brickion/bitcoinPlay#readme",
   "dependencies": {
-    "bitcoinjs-lib": "^3.3.2",
-    "got": "^8.3.0"
+    "axios": "^0.18.0",
+    "bitcoinjs-lib": "^3.3.2"
   }
 }
