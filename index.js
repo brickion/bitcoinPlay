@@ -82,11 +82,9 @@ async function send(from, key, to, amount) {
 	if (fee > amtSatoshi) throw "Amount amount must be larger than the fee."
 
   console.log(amtSatoshi)
-  console.log(fee)
-  console.log(amtSatoshi - fee)
 
-  tx.addOutput('blah', (amtSatoshi - fee))
-
+  // tx.addOutput(to, amtSatoshi - fee)
+  //
   // //if (change > 0) tx.addOutput(from, change)
   //
   // var keyPair = bitcoin.ECPair.fromWIF(key)
