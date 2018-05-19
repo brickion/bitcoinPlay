@@ -1,19 +1,20 @@
 const bitcoin = require('bitcoinjs-lib')
 const axios = require('axios')
-const production = false
+const production = true
 const confirmationsMin = 6
 const BITCOIN_DIGITS = 8;
 const BITCOIN_SAT_MULT = Math.pow(10, BITCOIN_DIGITS);
-const network = production ? bitcoin.networks.bitcoin : bitcoin.networks.testnet
+const network = bitcoin.networks.bitcoin // production ? bitcoin.networks.bitcoin : bitcoin.networks.testnet
 const blockchainInfoURL = production ? 'https://blockchain.info' : 'https://testnet.blockchain.info'
 
-//console.log(CreateAccount())
+//CreateAccount()
 //isTransactionSuccessful('29804e2ada8afb98b11d4ac288b5ec41cf6a789aa2251342dfec0cc16d06b51b')
 //GetTransaction('29804e2ada8afb98b11d4ac288b5ec41cf6a789aa2251342dfec0cc16d06b51b')
 //GetBalance('n4BFE8vKYmxgRHSxcgJ75MB4SQSbRSn8De')
 
-send('n4BFE8vKYmxgRHSxcgJ75MB4SQSbRSn8De', 'cPRQxjieq3iuERazzJBmVoPkWp9JPwSf5VxDSBrQdGNKDaepEPRx', 'mkoeWmC6Y7fhoNufGTfpyWPACqSAfBJr1c', '0.01')
-
+send('1HbjggyRUHqLamPt4NPV4UnHeGA2pgijue', 'Kyc7YFhsf8FmktW6CiUEYZLPXUXDMs4psjbaxm2fNTgScj2vKcQv', '1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', '0.00002')
+//send('1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', 'Kyc7YFhsf8FmktW6CiUEYZLPXUXDMs4psjbaxm2fNTgScj2vKcQv', '1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', '0.01')
+//getTrans('1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9')
 
 async function getFees() {
   const url = 'https://bitcoinfees.earn.com/api/v1/fees/recommended'
@@ -26,15 +27,25 @@ async function getTransactionSize (numInputs, numOutputs) {
 }
 
 async function getTrans(address) {
-  const res = await axios.get(blockchainInfoURL + '/unspent?active=' + address)
-	return res.data.unspent_outputs.map(function (e) {
-		return {
-			txid: e.tx_hash_big_endian,
-			vout: e.tx_output_n,
-			satoshis: e.value,
-			confirmations: e.confirmations
-		}
-	})
+  try {
+    const res = await axios.get(blockchainInfoURL + '/unspent?active=' + address)
+  	return res.data.unspent_outputs.map(function (e) {
+  		return {
+  			txid: e.tx_hash_big_endian,
+  			vout: e.tx_output_n,
+  			satoshis: e.value,
+  			confirmations: e.confirmations
+  		}
+  	})
+  }
+  catch (e) {
+    return {
+      error: {
+        message: 'can not get transactions, ensure wallet is not empty and btc network is online',
+        full_error: e
+      }
+    }
+  }
 }
 
 async function send(from, key, to, amount) {
@@ -49,15 +60,19 @@ async function send(from, key, to, amount) {
   // //console.log(res.data)
 
 	const amtSatoshi = Math.floor(amount*BITCOIN_SAT_MULT)
-  // console.log(amtSatoshi)
+  console.log('to send: ' + amtSatoshi)
 
   const feePerByte = await getFees()
-  //console.log(feePerByte)
+  console.log('fee per byte: ' + feePerByte)
 
 	const utxos = await getTrans(from)
-  //console.log(utxos)
+  if (utxos.error) {
+    console.log(utxos.error.message)
+    process.exit()
+  }
+  // console.log(utxos) // previous transactions
 
-	const tx = new bitcoin.TransactionBuilder({network:network})
+  const tx = new bitcoin.TransactionBuilder(network)
 	var ninputs = 0
 	var availableSat = 0
 
@@ -71,34 +86,52 @@ async function send(from, key, to, amount) {
 		}
 	}
 
-	if (availableSat < amtSatoshi) throw "You do not have enough"
+  console.log('available: ' + availableSat)
+  console.log('amount:' + amtSatoshi)
+
+	if (availableSat < amtSatoshi) {
+    //throw "You do not have enough"
+    console.log('not enough bitcoins to send this transaction')
+    process.exit()
+  }
 
 	var change = availableSat - amtSatoshi
-  console.log(change)
+  console.log('change: ' + change)
 
   var fee = await getTransactionSize(ninputs, change > 0 ? 2 : 1)*feePerByte
-  //console.log(fee)
+  console.log('fee: ' + fee)
 
-	if (fee > amtSatoshi) throw "Amount amount must be larger than the fee."
+	if (fee > amtSatoshi) {
+    console.log('Amount amount must be larger than the fee.')
+    process.exit()
+    // throw "Amount amount must be larger than the fee."
+  }
+  try {
+    tx.addOutput(to, amtSatoshi - fee)
+    if (change > 0) tx.addOutput(from, change)
+    var keyPair = bitcoin.ECPair.fromWIF(key)
+    console.log(keyPair)
 
-  console.log(amtSatoshi)
+  	for (var i = 0; i < ninputs; i++) {
+  	    tx.sign(i, keyPair)
+  	}
+  	var msg = tx.build().toHex()
+  	console.log(msg)
+  }
+  catch (e) {
+    console.log(e)
+  }
 
-  // tx.addOutput(to, amtSatoshi - fee)
-  //
-  // //if (change > 0) tx.addOutput(from, change)
-  //
-  // var keyPair = bitcoin.ECPair.fromWIF(key)
-	// for (var i = 0; i < ninputs; i++) {
-	//    tx.sign(i, keyPair)
-	// }
-	// var msg = tx.build().toHex()
-	// console.log(msg)
 }
 
 function CreateAccount() {
-  var keyPair = bitcoin.ECPair.makeRandom({network: network})
+  var keyPair = bitcoin.ECPair.makeRandom(network)
   var address = keyPair.getAddress()
   var key = keyPair.toWIF()
+
+  console.log({address:address,key:key} )
+  //var blahNew = bitcoin.ECPair.fromWIF(key) // <- works
+  //console.log(blahNew)
   return {
     address: address,
     key: key
