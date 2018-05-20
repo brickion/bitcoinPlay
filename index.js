@@ -12,7 +12,7 @@ const blockchainInfoURL = production ? 'https://blockchain.info' : 'https://test
 //GetTransaction('29804e2ada8afb98b11d4ac288b5ec41cf6a789aa2251342dfec0cc16d06b51b')
 //GetBalance('n4BFE8vKYmxgRHSxcgJ75MB4SQSbRSn8De')
 
-send('1HbjggyRUHqLamPt4NPV4UnHeGA2pgijue', 'Kyc7YFhsf8FmktW6CiUEYZLPXUXDMs4psjbaxm2fNTgScj2vKcQv', '1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', '0.00002')
+send('1HbjggyRUHqLamPt4NPV4UnHeGA2pgijue', 'Kyc7YFhsf8FmktW6CiUEYZLPXUXDMs4psjbaxm2fNTgScj2vKcQv', '1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', '0.0001')
 //send('1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', 'Kyc7YFhsf8FmktW6CiUEYZLPXUXDMs4psjbaxm2fNTgScj2vKcQv', '1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9', '0.01')
 //getTrans('1DBEUHMhMpRtM3SRfotKC4KkcM881LrqS9')
 
